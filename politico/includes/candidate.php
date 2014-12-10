@@ -26,7 +26,7 @@ function setup_cpt() {
 		'labels'             => $labels,
 		'public'             => true,
 		'query_var'          => true,
-		'rewrite'            => array( 'slug' => 'candidate' ),
+		'rewrite'            => array( 'slug' => 'candidates' ),
 		'capability_type'    => 'post',
 		'has_archive'        => true,
 		'hierarchical'       => false,
