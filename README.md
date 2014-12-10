@@ -170,7 +170,7 @@ We will build a child theme off of `TwentyFifteen`. [Child themes](http://codex.
 		}
 		add_action( 'save_post', 'politico\candidate\save_post' );
 		```
-1. Now that we have create our meta box and handled saving. Let's turn our attention to the front of our website. First, make sure pretty permalinks are enabled (see Settings > Permalinks). Let's create a candidate called `Hilary Clinton`. Once we've published our new candidate, a URL will show up like so: `http://local.wordpress-trunk.dev/candidates/hilary-clinton/`. Notice how `candidates` is the slug we chose earlier when registering the post type.
+1. Now that we have create our meta box and handled saving. Let's turn our attention to the front of our website. First, make sure pretty permalinks are enabled (see Settings > Permalinks). Let's create a candidate called `Hillary Clinton`. Once we've published our new candidate, a URL will show up like so: `http://local.wordpress-trunk.dev/candidates/hillary-clinton/`. Notice how `candidates` is the slug we chose earlier when registering the post type.
 
 	If we view that URL, we see the title and content but not the state and political party. Remember, this view is inheriting the `single.php` template from the parent theme that knows nothing about the new fields we've created. There are a few directions we can go from here. We could add a hook/filter to the parent theme that allows us to conditionally output code given a specific post type; we can override the view completely; there are probably other creative solutions as well. For the sake of simplicity, let's override the template completely.
 
@@ -232,7 +232,7 @@ That's it! We can see a river of candidates if we view `http://local.wordpress-t
 
 Remember, our new microsite has a blog. The blog will contain posts associated with specific candidate(s). Posts will be categorized. One of these categories is `Green Energy`. We would like to create a custom category archive template and add specific widgets to this archive.
 
-1. First, create a post called "Hilary Talks Green Energy". Add a category called "Green Energy".
+1. First, create a post called "Hillary Talks Green Energy". Add a category called "Green Energy".
 1.  Again, there are multiple ways we can do this either using hooks/filters or overriding/creating specific templates. We will create a new template in the child theme. Create the file `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/category-green-energy.php` and paste the following code:
 
 
