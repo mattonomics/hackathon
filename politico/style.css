@@ -4,3 +4,19 @@
  Author: Your Name Here!
  Template: twentyfifteen
 */
+
+.content-sidebar {
+	background-color: #fff;
+	margin: 30px 8.3333%;
+	box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+	padding: 2.5% 10%;
+}
+
+.content-sidebar .widget {
+	margin: 0 0 20px 0;
+	padding: 0;
+}
+
+.content-sidebar .widget:last-child {
+	margin-bottom: 0;
+}

@@ -233,10 +233,94 @@ That's it! We can see a river of candidates if we view `http://local.wordpress-t
 Remember, our new microsite has a blog. The blog will contain posts associated with specific candidate(s). Posts will be categorized. One of these categories is `Green Energy`. We would like to create a custom category archive template and add specific widgets to this archive.
 
 1. First, create a post called "Hillary Talks Green Energy". Add a category called "Green Energy".
-1.  Again, there are multiple ways we can do this either using hooks/filters or overriding/creating specific templates. We will create a new template in the child theme. Create the file `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/category-green-energy.php` and paste the following code:
+1.  We need to register a sidebar or widgetized areas. Paste this code into `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/functions.php`:
 
+	```php
+	/**
+	 * Sidebars
+	 */
+	function register_sidebars() {
+		register_sidebar( array(
+			'name' => esc_html__( 'Green Energy Widget Area', 'politico' ),
+			'id' => 'green-energy',
+			'description' => esc_html__( 'Widgets here will show up on green energy archive page.', 'politico' ),
+			'before_title' => '<h2>',
+			'after_title' => '</h2>',
+			'before_widget' => '<div id="%1$s" class="widget %2$s">',
+			'after_widget'  => '</div>',
+		) );
+	}
+	add_action( 'widgets_init', 'politico\register_sidebars' );
+	```
+
+1.  Now we need to output our widgetized area. There are multiple ways we can modify the archive view using hooks/filters or overriding/creating specific templates. We will create a new template in the child theme. Create the file `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/category-green-energy.php` and paste the following code:
+
+	```php
+	<?php get_header(); ?>
+	
+	<section id="primary" class="content-area">
+		<main id="main" class="site-main" role="main">
+	
+			<?php if ( have_posts() ) : ?>
+	
+				<header class="page-header">
+					<?php
+					the_archive_title( '<h1 class="page-title">', '</h1>' );
+					the_archive_description( '<div class="taxonomy-description">', '</div>' );
+					?>
+				</header><!-- .page-header -->
+	
+				<?php
+				// Start the Loop.
+				while ( have_posts() ) : the_post();
+					get_template_part( 'content', get_post_format() );
+				endwhile;
+	
+				// Previous/next page navigation.
+				the_pagination( array(
+					'prev_text'          => __( 'Previous page', 'twentyfifteen' ),
+					'next_text'          => __( 'Next page', 'twentyfifteen' ),
+					'before_page_number' => '<span class="meta-nav screen-reader-text">' . __( 'Page', 'twentyfifteen' ) . ' </span>',
+				) );
+	
+			// If no content, include the "No posts found" template.
+			else :
+				get_template_part( 'content', 'none' );
+	
+			endif;
+			?>
+	
+			<section class="content-sidebar">
+				<?php dynamic_sidebar( 'green-energy' ); ?>
+			</section>
+	
+		</main><!-- .site-main -->
+	</section><!-- .content-area -->
+	
+	<?php get_footer(); ?>
+	```
 
 	This template will show on the following URL: `http://local.wordpress-trunk.dev/category/green-energy`. It will not affect any other taxonomy archive.
+	
+1. We need to add some styling to our widgetized area. In `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/style.css` paste the following code:
+	```css
+	.content-sidebar {
+		background-color: #fff;
+		margin: 30px 8.3333%;
+		box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+		padding: 2.5% 10%;
+	}
+	
+	.content-sidebar .widget {
+		margin: 0 0 20px 0;
+		padding: 0;
+	}
+	
+	.content-sidebar .widget:last-child {
+		margin-bottom: 0;
+	}
+	```
+1. Finally let's create some widgets. On `http://local.wordpress-trunk.dev/wp-admin/widgets.php` I added two text widgets to the `Green Energy` sidebar for testing purposes. We can add other types of widgets as well as create our own. However, in order for them to look good, a little extra styling work is needed.
 
 
 
