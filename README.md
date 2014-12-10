@@ -172,7 +172,59 @@ We will build a child theme off of `TwentyFifteen`. [Child themes](http://codex.
 		```
 1. Now that we have create our meta box and handled saving. Let's turn our attention to the front of our website. First, make sure pretty permalinks are enabled (see Settings > Permalinks). Let's create a candidate called `Hilary Clinton`. Once we've published our new candidate, a URL will show up like so: `http://local.wordpress-trunk.dev/candidate/hilary-clinton/`. Notice how `candidate` is the slug we chose earlier when registering the post type.
 
-	If we view that URL, we see the title and content but not the state and political party. Remember, this view is inheriting the `single.php` template from the parent theme that knows nothing about the new fields we've created.
+	If we view that URL, we see the title and content but not the state and political party. Remember, this view is inheriting the `single.php` template from the parent theme that knows nothing about the new fields we've created. There are a few directions we can go from here. We could add a hook/filter to the parent theme that allows us to conditionally output code given a specific post type; we can override the view completely; there are probably other creative solutions as well. For the sake of simplicity, let's override the template completely.
+
+	We could create a file `single.php` in our child theme. This would override the single view for ALL post types. This is overkill since we only care about the `policical_candidate` post type. Instead, let's create a file `VAGRANT-LOCAL/wordpress-trunk/wp-content/themes/politico/single-political_candidate.php` which will override the single view only for our specific post type.
+
+	Here is our code for `single-political-candidate.php`:
+	```php
+	<?php get_header(); ?>
+	
+	<div id="primary" class="content-area">
+		<main id="main" class="site-main" role="main">
+	
+			<?php
+			// Start the loop.
+			while ( have_posts() ) : the_post(); ?>
+
+				<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+	            	<?php twentyfifteen_post_thumbnail(); ?>
+	
+	            	<header class="entry-header">
+	            		<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+	            	</header><!-- .entry-header -->
+	
+	            	<div class="entry-content">
+	            		<?php the_content(); ?>
+	            	</div><!-- .entry-content -->
+	
+	            	<footer class="entry-footer">
+	            	    <p>
+	            	        <strong><?php esc_html_e( 'Political Party:', 'politico' ); ?></strong>
+	            	        <?php echo esc_html( get_post_meta( get_the_ID(), 'politico_candidate_party', true ) ); ?>
+	            	    </p>
+	            	    <p>
+	                        <strong><?php esc_html_e( 'Home State:', 'politico' ); ?></strong>
+	                        <?php echo esc_html( get_post_meta( get_the_ID(), 'politico_candidate_state', true ) ); ?>
+	                    </p>
+	            	</footer><!-- .entry-footer -->
+	            </article><!-- #post-## -->
+	
+				<?php
+	
+				if ( comments_open() || get_comments_number() ) :
+					comments_template();
+				endif;
+				// End the loop.
+	
+			endwhile;
+			?>
+	
+		</main><!-- .site-main -->
+	</div><!-- .content-area -->
+	
+	<?php get_footer(); ?>
+	```
 
 II. Let's create a custom template for a new category
 
