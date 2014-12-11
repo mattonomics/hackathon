@@ -1,7 +1,7 @@
 # 10up Hackathon
 
 
-## Create a custom post type for people called “Presidential Candidate”.
+## Create a custom post type called “Presidential Candidate”.
 
 Pretend we are creating a microsite for Presidential Candidates for the 2016 election. It's primary purpose will be to show off candidates. However, it will also have a blog. We want it to look similar to the Politico main site but have some stylish differences to make it feel special. Therefore the microsite will inherit templates from the main Politico theme but will add functionality and templates for candidates.
 
