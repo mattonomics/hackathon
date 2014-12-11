@@ -170,7 +170,44 @@ We will build a child theme off of `TwentyFifteen`. [Child themes](http://codex.
 		}
 		add_action( 'save_post', 'politico\candidate\save_post' );
 		```
-1. Now that we have create our meta box and handled saving. Let's turn our attention to the front of our website. First, make sure pretty permalinks are enabled (see Settings > Permalinks). Let's create a candidate called `Hillary Clinton`. Once we've published our new candidate, a URL will show up like so: `http://local.wordpress-trunk.dev/candidates/hillary-clinton/`. Notice how `candidates` is the slug we chose earlier when registering the post type.
+1. If you take a look at `http://local.wordpress-trunk.dev/wp-admin/edit.php?post_type=politico_candidate`, you will see our candidates table looks a bit empty. Let's add state and party to this table to help out our editors.
+	* First we need to register our custom columns. Add this code to the bottom of the `candidate.php` file:
+	```php
+	function filter_columns( $columns ) {
+		$columns['politico_state']  = esc_html__( 'Home State', 'politico' );
+		$columns['politico_party']  = esc_html__( 'Party', 'politico' );
+	
+		unset( $columns['date'] );
+		$columns['date']  = esc_html__( 'Date' );
+	
+		return $columns;
+	}
+	add_filter( 'manage_politico_candidate_posts_columns', 'politico\candidate\filter_columns' );
+	```
+	* Now we need to output our information for each of our custom columns:
+	```php
+	function output_columns( $column_name, $post_id ) {
+		if ( 'politico_state' === $column_name ) {
+			$state = get_post_meta( $post_id, 'politico_candidate_state', true );
+			if ( ! empty( $state ) ) {
+				echo esc_html( $state );
+			} else {
+				esc_html_e( 'None', 'politico' );
+			}
+		} elseif ( 'politico_party' === $column_name ) {
+			$party = get_post_meta( $post_id, 'politico_candidate_party', true );
+			if ( ! empty( $party ) ) {
+				echo ucwords( esc_html( $party ) );
+			} else {
+				esc_html_e( 'None', 'politico' );
+			}
+		}
+	}
+	add_action( 'manage_politico_candidate_posts_custom_column', 'politico\candidate\output_columns', 10, 2 );
+	```
+	* Check out `http://local.wordpress-trunk.dev/wp-admin/edit.php?post_type=politico_candidate`. You should now see the custom columns you just created.
+
+1. Now that we have create our meta box, handled saving, and added some extra table columns. Let's turn our attention to the front of our website. First, make sure pretty permalinks are enabled (see Settings > Permalinks). Let's create a candidate called `Hillary Clinton`. Once we've published our new candidate, a URL will show up like so: `http://local.wordpress-trunk.dev/candidates/hillary-clinton/`. Notice how `candidates` is the slug we chose earlier when registering the post type.
 
 	If we view that URL, we see the title and content but not the state and political party. Remember, this view is inheriting the `single.php` template from the parent theme that knows nothing about the new fields we've created. There are a few directions we can go from here. We could add a hook/filter to the parent theme that allows us to conditionally output code given a specific post type; we can override the view completely; there are probably other creative solutions as well. For the sake of simplicity, let's override the template completely.
 
@@ -321,7 +358,6 @@ Remember, our new microsite has a blog. The blog will contain posts associated w
 	}
 	```
 1. Finally let's create some widgets. On `http://local.wordpress-trunk.dev/wp-admin/widgets.php` I added two text widgets to the `Green Energy` sidebar for testing purposes. We can add other types of widgets as well as create our own. However, in order for them to look good, a little extra styling work is needed.
-
 
 
 

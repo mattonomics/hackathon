@@ -105,3 +105,45 @@ function save_post( $post_id ) {
 	}
 }
 add_action( 'save_post', 'politico\candidate\save_post' );
+
+/**
+ * Add new columns to candidate table
+ *
+ * @param array $columns
+ * @return array
+ */
+function filter_columns( $columns ) {
+	$columns['politico_state']  = esc_html__( 'Home State', 'politico' );
+	$columns['politico_party']  = esc_html__( 'Party', 'politico' );
+
+	unset( $columns['date'] );
+	$columns['date']  = esc_html__( 'Date' );
+
+	return $columns;
+}
+add_filter( 'manage_politico_candidate_posts_columns', 'politico\candidate\filter_columns' );
+
+/**
+ * Output candidate columns
+ *
+ * @param string $column_name
+ * @param id $post_id
+ */
+function output_columns( $column_name, $post_id ) {
+	if ( 'politico_state' === $column_name ) {
+		$state = get_post_meta( $post_id, 'politico_candidate_state', true );
+		if ( ! empty( $state ) ) {
+			echo esc_html( $state );
+		} else {
+			esc_html_e( 'None', 'politico' );
+		}
+	} elseif ( 'politico_party' === $column_name ) {
+		$party = get_post_meta( $post_id, 'politico_candidate_party', true );
+		if ( ! empty( $party ) ) {
+			echo ucwords( esc_html( $party ) );
+		} else {
+			esc_html_e( 'None', 'politico' );
+		}
+	}
+}
+add_action( 'manage_politico_candidate_posts_custom_column', 'politico\candidate\output_columns', 10, 2 );
