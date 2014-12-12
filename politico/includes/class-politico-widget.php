@@ -53,7 +53,7 @@ class Candidate extends \WP_Widget {
 				<option value="0"><?php _e( 'All States', 'politico' ); ?></option>
 			<?php
 				foreach ( \politico\get_states() as $state_short => $state_long ) {
-					echo '<option ' . selected( $state_short, $args['state'], false ) . ' value="' . esc_attr( $state_short ) . '">' . esc_attr( $state_long ) . "</option>\n";
+					echo '<option ' . selected( $state_long, $args['state'], false ) . ' value="' . esc_attr( $state_long ) . '">' . esc_attr( $state_long ) . "</option>\n";
 				}
 			?>
 			</select>
