@@ -30,7 +30,8 @@ class Candidate extends \WP_Widget {
 		?>
 		<p>
 			<label><?php _e( 'Title:', 'politico' ); ?></label>
-			<input id="<?php echo $this->get_field_id( 'title' ); ?>" type="text" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo esc_attr( $instance['title'] ); ?>">
+			<br>
+			<input id="<?php echo $this->get_field_id( 'title' ); ?>" type="text" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo esc_attr( $args['title'] ); ?>" class="widefat">
 		</p>
 		<p>
 			<label><?php _e( 'Number of Candidates to show:', 'politico' ); ?></label>
@@ -38,7 +39,6 @@ class Candidate extends \WP_Widget {
 		</p>
 		<p>
 			<label><?php _e( 'Candidate Party:', 'politico' ); ?></label>
-			<br>
 			<select name="<?php echo $this->get_field_name( 'party' ); ?>" id="<?php echo $this->get_field_id( 'party' ); ?>">
 				<option value="0"><?php _e( 'Any Party', 'politico' ); ?></option>
 				<option <?php selected( $args['party'], 'democrat' ); ?> value="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
@@ -73,6 +73,7 @@ class Candidate extends \WP_Widget {
 		$instance['num_candidates'] = absint( $new_instance['num_candidates'] );
 		$instance['party']          = esc_attr( $new_instance['party'] );
 		$instance['state']          = esc_attr( $new_instance['state'] );
+		$instance['title']          = esc_html( $new_instance['title'] );
 		return $instance;
 	}
 
@@ -84,10 +85,9 @@ class Candidate extends \WP_Widget {
 	 */
 	public function widget( $args, $instance ) {
 		// outputs the content of the widget
-		print_r(func_get_args()[1]);
 		$query_args = array(
-			'post_type'  => 'politico_candidate',
-			'num_posts'  => absint( $instance['num_candidates'] )
+			'post_type'       => 'politico_candidate',
+			'posts_per_page'  => absint( $instance['num_candidates'] )
 		);
 		if ( !empty( $instance['state'] ) ) {
 			$query_args['meta_query'][] = array(
@@ -106,12 +106,13 @@ class Candidate extends \WP_Widget {
 			echo $args['before_widget'];
 			if ( ! empty( $instance['title'] ) ) {
 				echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ). $args['after_title'];
-				echo "<ul>";
 			}
+			echo "<ul>";
 			while ( $query->have_posts() ) {
 				$query->the_post();
 				echo '<li><a href="' . get_permalink() . '">' . get_the_title() . '</a>';
 			}
+			echo "</ul>";
 			echo $args['after_widget'];
 			wp_reset_query();
 		}

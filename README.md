@@ -360,4 +360,382 @@ Remember, our new microsite has a blog. The blog will contain posts associated w
 1. Finally let's create some widgets. On `http://local.wordpress-trunk.dev/wp-admin/widgets.php` I added two text widgets to the `Green Energy` sidebar for testing purposes. We can add other types of widgets as well as create our own. However, in order for them to look good, a little extra styling work is needed.
 
 
+##Candidates Widget
+WordPress has a very simple API for creating widgets, a mechanism by which users are able to add content or features to sidebars like the one previously created.
 
+Let's first examine the basic widget outline, then work on filling in each method.
+
+```php
+<?php
+namespace politico\widget;
+
+class Candidate extends \WP_Widget {
+	// constructor method
+	public function __construct() {}
+
+	// admin side, user facing form
+	public function form( $instance ){}
+
+	// runs on admin form save
+	public function update( $new_instance, $old_instance ){}
+
+	// front end output
+	public function widget( $args, $instance ){}
+
+}
+```
+
+The code above illustrates the four basic methods required when creating a widget:
+
+ 1. The class constructor that will be used to pass data to the parent class.
+ 2. The form method that is used to display the admin side, user facing widget form. This is where users will adjust the widget options to change the front end output of the widget.
+ 3. The update method that runs when a user saves the admin form.
+ 4. The widget method that will be used for front end output.
+
+Now, let's fill in each method and discuss what's happening with each step.
+
+###Constructor
+```php
+<?php
+namespace politico\widget;
+
+class Candidate extends \WP_Widget {
+	// constructor method
+	public function __construct() {
+		parent::__construct(
+			'candidate_widget', // Base ID
+			__( 'List Candidates', 'politico' ), // Name
+			array( 'description' => __( 'List candidates by Party or state', 'politico' ), ) // Args
+		);
+	}
+
+	// admin side, user facing form
+	public function form( $instance ){}
+
+	// runs on admin form save
+	public function update( $new_instance, $old_instance ){}
+
+	// front end output
+	public function widget( $args, $instance ){}
+
+}
+```
+In the class constructor, we pass data to the parent constructor that sets up the widget and creates the basic widget implementation on the WordPress admin side.
+
+The first parameter is a unique id that identifies this widget and will be used throughout the widget output, particularly when creating HTML `name` and `id` attributes. The second and third parameters dictate the widget title and description that will be displayed to the user on the admin side only.
+
+###Widget Form
+```php
+<?php
+namespace politico\widget;
+
+class Candidate extends \WP_Widget {
+	// constructor method
+	public function __construct() {
+		parent::__construct(
+			'candidate_widget', // Base ID
+			__( 'List Candidates', 'politico' ), // Name
+			array( 'description' => __( 'List candidates by Party or state', 'politico' ), ) // Args
+		);
+	}
+
+	// admin side, user facing form
+	public function form( $instance ){
+		// outputs the options form on admin
+		$args = wp_parse_args( $instance, array(
+			'num_candidates'  => 5,
+		    'party' => '',
+		    'state' => '',
+		    'title' => __( 'Political Candidates', 'politico' )
+		) );
+		?>
+		<p>
+			<label><?php _e( 'Title:', 'politico' ); ?></label>
+			<br>
+			<input id="<?php echo $this->get_field_id( 'title' ); ?>" type="text" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo esc_attr( $args['title'] ); ?>" class="widefat">
+		</p>
+		<p>
+			<label><?php _e( 'Number of Candidates to show:', 'politico' ); ?></label>
+			<input id="<?php echo $this->get_field_id( 'num_candidates' ); ?>" type="text" name="<?php echo $this->get_field_name( 'num_candidates' ); ?>" size="2" value="<?php echo esc_attr( $args['num_candidates'] ); ?>">
+		</p>
+		<p>
+			<label><?php _e( 'Candidate Party:', 'politico' ); ?></label>
+			<select name="<?php echo $this->get_field_name( 'party' ); ?>" id="<?php echo $this->get_field_id( 'party' ); ?>">
+				<option value="0"><?php _e( 'Any Party', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'democrat' ); ?> value="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'republican' ); ?> value="republican"><?php esc_html_e( 'Republican', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'independent' ); ?>  value="independent"><?php esc_html_e( 'Independent', 'politico' ); ?></option>
+			</select>
+		</p>
+		<p>
+			<label><?php _e( 'Candidate State:', 'politico' ); ?></label>
+			<br>
+			<select name="<?php echo $this->get_field_name( 'state' ) ?>" id="<?php echo $this->get_field_id( 'state' ); ?>">
+				<option value="0"><?php _e( 'All States', 'politico' ); ?></option>
+			<?php
+				foreach ( \politico\get_states() as $state_short => $state_long ) {
+					echo '<option ' . selected( $state_short, $args['state'], false ) . ' value="' . esc_attr( $state_short ) . '">' . esc_attr( $state_long ) . "</option>\n";
+				}
+			?>
+			</select>
+		</p>
+		<?php
+	}
+
+	// runs on admin form save
+	public function update( $new_instance, $old_instance ){}
+
+	// front end output
+	public function widget( $args, $instance ){}
+
+}
+```
+
+In the form method, we add in the code to display the user facing admin form. In this example, we're creating:
+
+ - Widget title
+ - The number of candidates to display
+ - The candidate party to filter by
+ - The candidate state to filter by
+
+Note the usage of `$this->get_field_id( 'party' )` and `$this->get_field_name( 'party' )`. It is critical that you use these methods on inputs that are going to be saved by the widget. Failure to do so will result in the widget not saving.
+
+###Saving the widget
+Now that we have the admin side form in place, let's sanitize and save the data.
+
+```php
+<?php
+namespace politico\widget;
+
+class Candidate extends \WP_Widget {
+	// constructor method
+	public function __construct() {
+		parent::__construct(
+			'candidate_widget', // Base ID
+			__( 'List Candidates', 'politico' ), // Name
+			array( 'description' => __( 'List candidates by Party or state', 'politico' ), ) // Args
+		);
+	}
+
+	// admin side, user facing form
+	public function form( $instance ){
+		// outputs the options form on admin
+		$args = wp_parse_args( $instance, array(
+			'num_candidates'  => 5,
+		    'party' => '',
+		    'state' => '',
+		    'title' => __( 'Political Candidates', 'politico' )
+		) );
+		?>
+		<p>
+			<label><?php _e( 'Title:', 'politico' ); ?></label>
+			<br>
+			<input id="<?php echo $this->get_field_id( 'title' ); ?>" type="text" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo esc_attr( $args['title'] ); ?>" class="widefat">
+		</p>
+		<p>
+			<label><?php _e( 'Number of Candidates to show:', 'politico' ); ?></label>
+			<input id="<?php echo $this->get_field_id( 'num_candidates' ); ?>" type="text" name="<?php echo $this->get_field_name( 'num_candidates' ); ?>" size="2" value="<?php echo esc_attr( $args['num_candidates'] ); ?>">
+		</p>
+		<p>
+			<label><?php _e( 'Candidate Party:', 'politico' ); ?></label>
+			<select name="<?php echo $this->get_field_name( 'party' ); ?>" id="<?php echo $this->get_field_id( 'party' ); ?>">
+				<option value="0"><?php _e( 'Any Party', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'democrat' ); ?> value="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'republican' ); ?> value="republican"><?php esc_html_e( 'Republican', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'independent' ); ?>  value="independent"><?php esc_html_e( 'Independent', 'politico' ); ?></option>
+			</select>
+		</p>
+		<p>
+			<label><?php _e( 'Candidate State:', 'politico' ); ?></label>
+			<br>
+			<select name="<?php echo $this->get_field_name( 'state' ) ?>" id="<?php echo $this->get_field_id( 'state' ); ?>">
+				<option value="0"><?php _e( 'All States', 'politico' ); ?></option>
+			<?php
+				foreach ( \politico\get_states() as $state_short => $state_long ) {
+					echo '<option ' . selected( $state_short, $args['state'], false ) . ' value="' . esc_attr( $state_short ) . '">' . esc_attr( $state_long ) . "</option>\n";
+				}
+			?>
+			</select>
+		</p>
+		<?php
+	}
+
+	// runs on admin form save
+	public function update( $new_instance, $old_instance ){
+		// processes widget options to be saved
+		$instance                   = array();
+		$instance['num_candidates'] = absint( $new_instance['num_candidates'] );
+		$instance['party']          = esc_attr( $new_instance['party'] );
+		$instance['state']          = esc_attr( $new_instance['state'] );
+		$instance['title']          = esc_html( $new_instance['title'] );
+		return $instance;
+	}
+
+	// front end output
+	public function widget( $args, $instance ){}
+
+}
+```
+
+Note that the `$new_instance` variable is filled with the data the user just submitted and the `$old_instance` variable is filled with previously saved data.
+
+Also note how the keys of `$new_instance` should line up perfectly with what was passed to `$this->get_field_name()`.
+
+Finally, be sure to properly sanitize the data, preferably using the internal WordPress functions to do so.
+
+###Front end output
+Now that we have the form and we're saving the data, let's take that data and use it to create a query on the front end.
+
+**Note:** We'll be using a post meta query which isn't necessarily the optimal way to query data from the WordPress database. However, for the scope of this project this is a great example of the power of the APIs within WordPress.
+
+```php
+<?php
+namespace politico\widget;
+
+class Candidate extends \WP_Widget {
+	// constructor method
+	public function __construct() {
+		parent::__construct(
+			'candidate_widget', // Base ID
+			__( 'List Candidates', 'politico' ), // Name
+			array( 'description' => __( 'List candidates by Party or state', 'politico' ), ) // Args
+		);
+	}
+
+	// admin side, user facing form
+	public function form( $instance ){
+		// outputs the options form on admin
+		$args = wp_parse_args( $instance, array(
+			'num_candidates'  => 5,
+		    'party' => '',
+		    'state' => '',
+		    'title' => __( 'Political Candidates', 'politico' )
+		) );
+		?>
+		<p>
+			<label><?php _e( 'Title:', 'politico' ); ?></label>
+			<br>
+			<input id="<?php echo $this->get_field_id( 'title' ); ?>" type="text" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo esc_attr( $args['title'] ); ?>" class="widefat">
+		</p>
+		<p>
+			<label><?php _e( 'Number of Candidates to show:', 'politico' ); ?></label>
+			<input id="<?php echo $this->get_field_id( 'num_candidates' ); ?>" type="text" name="<?php echo $this->get_field_name( 'num_candidates' ); ?>" size="2" value="<?php echo esc_attr( $args['num_candidates'] ); ?>">
+		</p>
+		<p>
+			<label><?php _e( 'Candidate Party:', 'politico' ); ?></label>
+			<select name="<?php echo $this->get_field_name( 'party' ); ?>" id="<?php echo $this->get_field_id( 'party' ); ?>">
+				<option value="0"><?php _e( 'Any Party', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'democrat' ); ?> value="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'republican' ); ?> value="republican"><?php esc_html_e( 'Republican', 'politico' ); ?></option>
+				<option <?php selected( $args['party'], 'independent' ); ?>  value="independent"><?php esc_html_e( 'Independent', 'politico' ); ?></option>
+			</select>
+		</p>
+		<p>
+			<label><?php _e( 'Candidate State:', 'politico' ); ?></label>
+			<br>
+			<select name="<?php echo $this->get_field_name( 'state' ) ?>" id="<?php echo $this->get_field_id( 'state' ); ?>">
+				<option value="0"><?php _e( 'All States', 'politico' ); ?></option>
+			<?php
+				foreach ( \politico\get_states() as $state_short => $state_long ) {
+					echo '<option ' . selected( $state_short, $args['state'], false ) . ' value="' . esc_attr( $state_short ) . '">' . esc_attr( $state_long ) . "</option>\n";
+				}
+			?>
+			</select>
+		</p>
+		<?php
+	}
+
+	// runs on admin form save
+	public function update( $new_instance, $old_instance ){
+		// processes widget options to be saved
+		$instance                   = array();
+		$instance['num_candidates'] = absint( $new_instance['num_candidates'] );
+		$instance['party']          = esc_attr( $new_instance['party'] );
+		$instance['state']          = esc_attr( $new_instance['state'] );
+		$instance['title']          = esc_html( $new_instance['title'] );
+		return $instance;
+	}
+
+	// front end output
+	public function widget( $args, $instance ){
+		// outputs the content of the widget
+		$query_args = array(
+			'post_type'  => 'politico_candidate',
+			'num_posts'  => absint( $instance['num_candidates'] )
+		);
+		if ( !empty( $instance['state'] ) ) {
+			$query_args['meta_query'][] = array(
+				'key'     => 'politico_candidate_state',
+			    'value'   => esc_attr( $instance['state'] )
+			);
+		}
+		if ( !empty( $instance['party'] ) ) {
+			$query_args['meta_query'][] = array(
+				'key'    => 'politico_candidate_party',
+			    'value'  => esc_attr( $instance['party'] )
+			);
+		}
+		$query = new \WP_Query( $query_args );
+		if ( $query->have_posts() ) {
+			echo $args['before_widget'];
+			if ( ! empty( $instance['title'] ) ) {
+				echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ). $args['after_title'];
+			}
+			echo "<ul>";
+			while ( $query->have_posts() ) {
+				$query->the_post();
+				echo '<li><a href="' . get_permalink() . '">' . get_the_title() . '</a>';
+			}
+			echo "</ul>";
+			echo $args['after_widget'];
+			wp_reset_query();
+		}
+	}
+
+}
+```
+
+The `widget` method receives two parameters:
+
+ - `$args` The arguments set up by the sidebar that will determine what HTML goes before and after the widget as well as the HTML that goes before and after the title.
+ - `$instance` The user defined data for this instance of the widget. In this case, `num_candidates`, `party`, `state`, and `title`.
+
+Building a query within WordPress is extremely easy. In this example we start with the base arguments of `post_type` and `posts_per_page`.
+```php
+$query_args = array(
+			'post_type'  => 'politico_candidate',
+			'num_posts'  => absint( $instance['num_candidates'] )
+);
+```
+We then check to see if anything was saved for either of the filters with:
+
+```php
+if ( !empty( $instance['state'] ) ) {
+	$query_args['meta_query'][] = array(
+		'key'     => 'politico_candidate_state',
+		'value'   => esc_attr( $instance['state'] )
+	);
+}
+```
+
+Finally, we execute the generated query with:
+```php
+$query = new \WP_Query( $query_args );
+```
+
+Note that we must use a backslash for class names that are in the global namespace. In PHP, class names **always** resolve to the current namespace whereas functions will fallback to the global definition.
+
+###Register the widget
+Now that we have built the widget, we need to register it with WordPress so that it shows up in the widget interface. To do so, simply drop the following into the `functions.php` file:
+
+```php
+/**
+ * Widget
+ */
+function register_widget() {
+	\register_widget( 'politico\widget\Candidate' );
+}
+add_action( 'widgets_init', 'politico\register_widget' );
+```
+
+Note that we use a backslash with our call to `\register_widget()` so that we're sure to reference the function that exists in the global namespace and not the current namespace since we just created a function with the same name.
