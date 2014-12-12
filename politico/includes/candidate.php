@@ -63,9 +63,9 @@ function output_candidate_information( $post ) {
 			<?php esc_html_e( 'Political Party:', 'politico' ); ?>
 		</label><br>
 		<select name="politico_candidate_party" id="politico_candidate_party">
-			<option name="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
-			<option <?php selected( $party, 'republican' ); ?> name="republican"><?php esc_html_e( 'Republican', 'politico' ); ?></option>
-			<option <?php selected( $party, 'independent' ); ?>  name="independent"><?php esc_html_e( 'Independent', 'politico' ); ?></option>
+			<option value="democrat"><?php esc_html_e( 'Democrat', 'politico' ); ?></option>
+			<option <?php selected( $party, 'republican' ); ?> value="republican"><?php esc_html_e( 'Republican', 'politico' ); ?></option>
+			<option <?php selected( $party, 'independent' ); ?>  value="independent"><?php esc_html_e( 'Independent', 'politico' ); ?></option>
 		</select>
 	</p>
 
@@ -73,7 +73,14 @@ function output_candidate_information( $post ) {
 		<label for="politico_candidate_state">
 			<?php esc_html_e( 'Home State:', 'politico' ); ?>
 		</label><br>
-		<input name="politico_candidate_state" id="politico_candidate_state" type="text" value="<?php if ( ! empty( $state ) ) echo esc_attr( $state ); ?>">
+		<select name="politico_candidate_state" class="postform">
+			<option value="0">--------</option>
+			<?php
+			foreach ( \politico\get_states() as $state_short => $state_long ) {
+				echo '<option ' . selected( $state_short, $state, false ) . ' value="' . esc_attr( $state_short ) . '">' . esc_attr( $state_long ) . "</option>\n";
+			}
+			?>
+		</select>
 	</p>
 
 	<?php
